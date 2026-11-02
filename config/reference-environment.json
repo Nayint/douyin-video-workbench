@@ -1,0 +1,98 @@
+{
+  "recorded_on": "2026-11-02",
+  "reference_platform": "macOS Apple Silicon",
+  "ollama_version": "0.40.12",
+  "dify_version": "1.17.1",
+  "dify_revision": "8387590ace4a094de812b7847fc6a4c3a27cd52b",
+  "text_model": "qwen3.8:27b",
+  "vision_model": "qwen3-vl:8b-instruct",
+  "transcription_repo": "Systran/faster-whisper-small",
+  "transcription_revision": "536b0662742c02347bc0e980a01041f333bce120",
+  "models": [
+    {
+      "name": "qwen3.8:27b",
+      "digest": "47951e4a666180bc2aedfc93c169472f2de783696fe196efbf063f5730ecf163",
+      "size_bytes": 18174721847,
+      "details": {
+        "parent_model": "",
+        "format": "safetensors",
+        "family": "",
+        "families": null,
+        "parameter_size": "",
+        "quantization_level": "nvfp4",
+        "runner": "mlx"
+      }
+    },
+    {
+      "name": "qwen3-vl:8b-instruct",
+      "digest": "0533d74300e4f9bc367d675d4e64ffd073d50ff16a2b4096cc2e8a1cf8c96319",
+      "size_bytes": 6140415975,
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen3vl",
+        "families": [
+          "qwen3vl"
+        ],
+        "parameter_size": "8.8B",
+        "quantization_level": "Q4_K_M",
+        "context_length": 262144,
+        "embedding_length": 4096,
+        "runner": "ggml"
+      }
+    },
+    {
+      "name": "qwen3:8b",
+      "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+      "size_bytes": 5225388164,
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen3",
+        "families": [
+          "qwen3"
+        ],
+        "parameter_size": "8.2B",
+        "quantization_level": "Q4_K_M",
+        "context_length": 40960,
+        "embedding_length": 4096,
+        "runner": "ggml"
+      }
+    }
+  ],
+  "images": [
+    {
+      "service": "dify-local-api-1",
+      "image": "langgenius/dify-api:1.17.1",
+      "digests": [
+        "langgenius/dify-api@sha256:ceede5b903afaa20348f7ad80ebf847379dc56d886a99b9ec6a08913dacd7732"
+      ]
+    },
+    {
+      "service": "dify-local-web-1",
+      "image": "langgenius/dify-web:1.17.1",
+      "digests": [
+        "langgenius/dify-web@sha256:6353fe8e04481aaef873ef7317507bfa9ac862572118fd037563a71bff9f4d08"
+      ]
+    },
+    {
+      "service": "dify-local-plugin_daemon-1",
+      "image": "langgenius/dify-plugin-daemon:0.6.10-local",
+      "digests": [
+        "langgenius/dify-plugin-daemon@sha256:34412a22d1e1d1a6c73727fef88cffbcdd9be7a21bf9ad3076b4bf5c1b88fd9b"
+      ]
+    },
+    {
+      "service": "bilinote",
+      "image": "ghcr.io/jefferyhcool/bilinote:latest",
+      "digests": [
+        "ghcr.io/jefferyhcool/bilinote@sha256:06067affc060b87f5769435f452f9e0837144fdfa62485c175ee5fba14f1f943"
+      ]
+    }
+  ],
+  "author_skill_sha256": "bbe67e71c923762eac11be91061a7a2b209a8825dcc98fa2f546773a442b23d5",
+  "reference_hardware": {
+    "chip": "Apple M5 Pro",
+    "unified_memory_gib": 48
+  }
+}

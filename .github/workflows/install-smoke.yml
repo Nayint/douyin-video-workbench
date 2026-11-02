@@ -1,0 +1,27 @@
+name: Install smoke
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  local-flow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install system dependency
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.lock
+      - name: Build frontend
+        working-directory: frontend
+        run: npm ci && npm run build
+      - name: Verify isolated first-run and configuration flows
+        run: python -m pytest -q tests/test_first_install.py tests/test_reproduction_setup.py tests/test_api.py tests/test_products.py tests/test_media.py

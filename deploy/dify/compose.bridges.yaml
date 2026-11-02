@@ -1,0 +1,41 @@
+# Optional legacy Dify link workflow; not required by local upload/author generation.
+services:
+  bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile.bridge
+      args:
+        BRIDGE_KIND: bilinote-bridge
+    environment:
+      BILINOTE_URL: http://host.docker.internal:18080
+      HOST_COPY_DIR: ${OBSIDIAN_COPY_DIR:?Set OBSIDIAN_COPY_DIR to your own existing directory}
+    volumes:
+      - bridge-data:/data
+      - ${OBSIDIAN_COPY_DIR}:/obsidian-copy
+    networks:
+      dify:
+        aliases: [bilinote_bridge]
+  optimized:
+    build:
+      context: .
+      dockerfile: Dockerfile.bridge
+    environment:
+      BILINOTE_URL: http://host.docker.internal:18080
+      HOST_COPY_DIR: ${OBSIDIAN_COPY_DIR:?Set OBSIDIAN_COPY_DIR}
+    volumes:
+      - optimized-data:/data
+      - bilinote-data:/bilinote-data:ro
+      - ${OBSIDIAN_COPY_DIR}:/obsidian-copy
+    networks:
+      dify:
+        aliases: [bilinote_opt_bridge]
+volumes:
+  bridge-data:
+  optimized-data:
+  bilinote-data:
+    external: true
+    name: bilinote-data
+networks:
+  dify:
+    external: true
+    name: dify-local_default

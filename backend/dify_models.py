@@ -16,15 +16,17 @@ from . import core
 LOCK = threading.RLock()
 HELPER = Path(__file__).with_name('dify_model_helper.py')
 ADAPTER_VERSION = 'model-versions-v3-product-brief'
-PRODUCT_REUSE_PATCH = Path(__file__).resolve().parents[2] / 'dify/workflows/product_brief_reuse.py'
+PRODUCT_REUSE_PATCH = core.ROOT / 'deploy/dify/product_brief_reuse.py'
+if not PRODUCT_REUSE_PATCH.is_file():
+    PRODUCT_REUSE_PATCH = core.ROOT.parent / 'dify/workflows/product_brief_reuse.py'
 
 
 def call(payload):
     if not PRODUCT_REUSE_PATCH.is_file():
-        raise ValueError('缺少 Dify 产品正文复用脚本，请恢复 dify/workflows/product_brief_reuse.py')
+        raise ValueError('缺少 Dify 产品正文复用脚本，请恢复 deploy/dify/product_brief_reuse.py')
     docker = shutil.which('docker') or '/usr/local/bin/docker'
     try:
-        result = subprocess.run([docker, 'exec', '-i', 'dify-local-api-1', 'python', '-c', PRODUCT_REUSE_PATCH.read_text() + '\n' + HELPER.read_text()],
+        result = subprocess.run([docker, 'exec', '-i', os.environ.get('VIRALLAB_DIFY_CONTAINER', 'dify-local-api-1'), 'python', '-c', PRODUCT_REUSE_PATCH.read_text() + '\n' + HELPER.read_text()],
                                 input=json.dumps(payload), text=True, capture_output=True, timeout=180)
         line = next((line for line in reversed(result.stdout.splitlines()) if line.startswith('VIRALLAB_RESULT=')), '')
         parsed = json.loads(line.split('=', 1)[1]) if line else {}

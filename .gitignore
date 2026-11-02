@@ -75,3 +75,11 @@ frontend/dist-coop/
 /scripts/open-wangxuge.sh
 /scripts/desktop-launcher.m
 /frontend/public/duo/assets/
+
+!/docs/SETUP.md
+!/docs/DEPENDENCIES.md
+!/docs/images/
+/deploy/dify/.env
+/deploy/dify/upstream/
+/deploy/dify/volumes/
+.venv*/
