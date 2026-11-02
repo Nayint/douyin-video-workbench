@@ -7,8 +7,10 @@
 需要 Python 3.11+、Node.js 20.19+、FFmpeg。根据功能配置 Ollama、faster-whisper 模型或自己的 Dify 工作流。
 
 ```sh
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.lock
+python3.11 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -r requirements.lock
+.venv/bin/python scripts/check_environment.py
 cd frontend
 npm ci
 npm run build
@@ -27,3 +29,13 @@ cd ..
 发布检查说明见 [OPEN_SOURCE.md](docs/OPEN_SOURCE.md)。
 
 项目原创代码采用 [MIT 许可证](LICENSE)，Copyright (c) 2026 许咏琪。第三方代码与素材遵循各自许可证，见随附 notices 和许可文件；MIT 不授予第三方素材权利。
+
+## 首次使用范围
+
+- 无需 AI 服务：手动录入案例、导入视频、提取关键帧、产品资料管理、编辑和导出已有文案。
+- 语音转写：安装 faster-whisper 模型，并在设置中指定包含 `model.bin` 的目录；不会自动下载模型。
+- AI 分析：运行 Ollama 并安装设置中选择的文字与视觉模型。
+- 文案生成：需要自己的作者写作卡或参考案例，以及对应的模型／Dify 工作流。空安装不包含原作者的私人写作卡、语料和工作流。
+- 公开版不提供 Apple 手机模型，首页三维展示会显示缺失提示，不影响数据管理。
+
+只支持本机使用，默认绑定 `127.0.0.1`。请勿直接作为多用户公网服务部署。

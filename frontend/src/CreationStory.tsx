@@ -37,6 +37,6 @@ export function CreationStory(){
  return <div ref={root} className={`continuous-story physical-fold-story${unavailable?' fold-unavailable':''}`}>
   <div ref={intro} className="fold-intro"><span>ViralLab · 为创作而生</span><h2>好内容，<br/><em>从这里开始。</em></h2><p>把灵感留下，把表达想透。<br/>让下一条视频，更像你。</p></div>
   <canvas ref={canvas} className="story-canvas" role="img" aria-label="真实设备模型：外屏播放原创带货画面和逐句字幕，屏幕展开时渐进虚化，字幕整理为内屏文案" />
-  {unavailable&&<span className="fold-fallback-note">三维展示暂未加载，请刷新页面重试</span>}
+  {unavailable&&<span className="fold-fallback-note">公开版未附带第三方设备模型；不影响工作台其他页面</span>}
  </div>;
 }
