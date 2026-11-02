@@ -44,7 +44,7 @@ ViralLab 面向需要持续研究短视频、管理产品事实、撰写带货�
 
 ## 快速开始
 
-已安装 Python 3.11、Node.js 20.19+ 和 FFmpeg 后：
+已安装 Python 3.11、Node.js 20.19+、FFmpeg 和 Poppler（扫描 PDF）后：
 
 ```bash
 git clone https://github.com/Nayint/douyin-video-workbench.git

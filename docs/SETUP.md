@@ -20,14 +20,16 @@
 
 ## 2. 安装工作台
 
-先安装 Git、Python 3.11、Node.js 20.19+、FFmpeg。macOS 已有 Homebrew 的用户可以运行：
+先安装 Git、Python 3.11、Node.js 20.19+、FFmpeg、Poppler（扫描 PDF）。macOS 已有 Homebrew 的用户可以运行：
 
 ```bash
-brew install python@3.11 node ffmpeg
+brew install python@3.11 node ffmpeg poppler
 git clone https://github.com/Nayint/douyin-video-workbench.git
 cd douyin-video-workbench
 bash scripts/bootstrap.sh
 ```
+
+Linux 安装系统依赖可使用 `sudo apt-get update && sudo apt-get install -y ffmpeg poppler-utils`；Python 3.11 和 Node 需按自己的发行版准备。
 
 脚本安装 Python/Node 依赖并构建前端，不下载大模型、不启动 Docker。若 Python 不在 PATH：
 
@@ -197,6 +199,7 @@ VIRALLAB_DATA=/tmp/virallab-demo .venv/bin/python -m uvicorn backend.app:app --h
 | Dify 报缺应用编号 | 用配置脚本填写新应用 UUID 和匹配的 API Key |
 | Dify 模型准备失败 | 检查容器名、Dify 1.17.1、模型供应商及宿主地址；运行 verify_reference |
 | 默认风格没有案例可选 | 案例必须先在研究所完成分析；空库不会附带作者私人案例 |
+| 扫描 PDF 无法提取 | 安装 Poppler：macOS `brew install poppler`，Ubuntu `sudo apt-get install poppler-utils` |
 | 转写模型不完整 | 检查所选目录的 model.bin 与其他下载文件 |
 | 第三方设备模型缺失 | 见第 8 节，其他页面不依赖它 |
 

@@ -25,6 +25,8 @@ def test_whisper_accepts_pcm_without_pyav(tmp_path,monkeypatch):
         def transcribe(self,samples,**kwargs):
             assert isinstance(samples,np.ndarray) and len(samples)==1600
             return iter([SimpleNamespace(start=0,end=.1,text='测试',words=[])]),SimpleNamespace(duration=.1)
+    model=tmp_path/'mock-model';model.mkdir();(model/'model.bin').touch()
+    monkeypatch.setattr(media,'settings',lambda:{'whisper_model':str(model)})
     monkeypatch.setattr(media,'_WHISPER',Decoder())
     monkeypatch.setattr(media,'_WHISPER_PATH',media.settings()['whisper_model'])
     assert media.transcribe(path,lambda *args:None)[0]['text']=='测试'
