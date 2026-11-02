@@ -1,0 +1,13 @@
+{
+  "model_source": "https://www.apple.com/105/media/us/iphone-duo/2026/9305e4b9-72d9-4c05-9381-b572adadd5e5/ar/iPhone_Duo_e-sim_Star-White_Variant.usdz",
+  "source_sha256": "5cab2ea636da0bc0b06c8abf4809843498f7c1d680042b4f95e383b5c6a718b2",
+  "prepared_sha256": "2c2a7bb5b67908d5dd0e5fadf13b2d1378c5f3d10649bedba875ed42f15f28c5",
+  "code_source": "https://github.com/chuspeeism/iphone-duo",
+  "code_revision": "2662ebbeb6aa844cd4f6888f7d6f8958662249fd",
+  "purpose": "local research preview; Apple assets excluded from MIT license",
+  "changes": [
+    "local import paths",
+    "React lifecycle adapter",
+    "ViralLab content and automatic timeline"
+  ]
+}

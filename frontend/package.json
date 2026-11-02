@@ -1,0 +1,40 @@
+{
+  "name": "virallab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc -b && vite build",
+    "build:play": "vite build --config vite.play.config.ts",
+    "test:estate": "node --test tests/estate/*.test.js",
+    "dev:coop": "tsx --tsconfig server/coop/tsconfig.json server/coop/index.ts",
+    "test:coop": "tsx --test tests/coop/*.test.ts",
+    "check:coop": "tsc -p server/coop/tsconfig.json",
+    "build:coop": "tsc -p tsconfig.coop.json && vite build --config vite.coop.config.ts",
+    "start:coop:public": "HOST=0.0.0.0 COOP_DIST=dist-coop tsx --tsconfig server/coop/tsconfig.json server/coop/index.ts"
+  },
+  "dependencies": {
+    "@colyseus/core": "0.18.23",
+    "@colyseus/schema": "5.0.42",
+    "@colyseus/sdk": "0.18.8",
+    "@colyseus/ws-transport": "0.18.4",
+    "@dimforge/rapier3d-compat": "0.17.3",
+    "express": "5.2.1",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "three": "0.186.0"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.6",
+    "@types/node": "26.6.5",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.186.0",
+    "prettier": "^3.9.10",
+    "tsx": "4.23.15",
+    "typescript": "~5.8.3",
+    "vite": "^6.4.0"
+  }
+}
