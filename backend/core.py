@@ -12,12 +12,16 @@ from pathlib import Path
 from urllib.parse import quote, urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA = Path(os.environ.get('VIRALLAB_DATA', ROOT / 'data')).resolve()
+DESKTOP = os.environ.get('VIRALLAB_DESKTOP') == '1'
+STANDALONE = DESKTOP or os.environ.get('VIRALLAB_STANDALONE') == '1'
+DATA = Path(os.environ.get('VIRALLAB_DATA', Path.home() / 'Library/Application Support/ViralLab' if DESKTOP else ROOT / ('data/standalone' if STANDALONE else 'data'))).expanduser().resolve()
 DATA.mkdir(parents=True, exist_ok=True, mode=0o700)
+BACKUPS = DATA / 'backups' if STANDALONE else ROOT / 'backups'
+SKILLS = DATA / 'author-skills' if STANDALONE else Path.home() / '.codex/skills'
 CONFIG = DATA / 'settings.json'
 DEFAULTS = dict(ollama_url='http://127.0.0.1:11434', text_model='qwen3:8b', vision_model='qwen3-vl:8b-instruct',
     dify_url='http://127.0.0.1:8081/v1', dify_keys={}, bilinote_url='http://127.0.0.1:18080',
-    vault_path=str(Path.home() / 'Documents' / 'ViralLabVault'), vault_subdir='ViralLab',
+    vault_path=str(DATA / 'vault' if STANDALONE else Path.home() / 'Documents' / 'ViralLabVault'), vault_subdir='ViralLab',
     product_subdir='ViralLab/产品资料', storage_path=str(DATA / 'media'),
     whisper_model=str(Path.home()/'.cache/huggingface/hub/models--Systran--faster-whisper-small/snapshots/536b0662742c02347bc0e980a01041f333bce120'),
     max_upload_mb=500, frame_count=8, model_timeout=600,

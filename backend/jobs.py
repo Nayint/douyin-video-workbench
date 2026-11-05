@@ -79,6 +79,10 @@ def draft_version(case_id,product_id,content,task_id=None,parent_id=None,title=N
         title=task_get(task_id)['payload'].get('draft_name','')
     if task_id:
         payload=task_get(task_id)['payload']
+        if task_get(task_id)['kind']=='local_write':
+            generation={'requested_models':payload.get('model_selection',{}),
+                        'generation_models':[{'model':payload.get('model_selection',{}).get('text_model'),'role':'writer'}],
+                        'writing_mode':payload.get('writing_mode','生活分享'),'engine':'local'}
         if payload.get('model_runtime'):
             generation={'requested_models':payload.get('model_selection',{}),
                         'generation_models':payload.get('actual_models',[]),
@@ -123,13 +127,21 @@ def finish_copy(task,content):
 def work(task):
     id=task['id']; payload=task['payload']; resource=task['resource_id']
     def progress(stage,value): task_update(id,stage=stage,progress=value)
+    if core.STANDALONE and not core.DESKTOP and task['kind'] != 'learning_sync':
+        from . import local_setup
+        state = local_setup.status()
+        while state['phase'] in ('preparing', 'downloading'):
+            progress(state['stage'], 0.01)
+            if STOP.wait(1): raise ValueError('服务正在停止，请重启后重试任务')
+            state = local_setup.status()
+        if state['phase'] == 'error': raise ValueError(state['error'])
     if task['kind']=='learning_sync':
         return writing_learning.sync(resource,payload['revision'])
-    if task['kind']=='author_write':
+    if task['kind'] in ('author_write','local_write'):
         existing=next((d for d in core.records('draft') if d.get('task_id')==id),None)
         if existing:return {'draft_id':existing['id'],'note':existing['note'],'fact_check':existing.get('fact_check')}
         profile=payload['author'];model=payload['model_selection']['text_model']
-        progress('按'+profile['name']+' · '+payload['writing_mode']+'写作',.15)
+        progress('按'+profile['name']+' · '+payload['writing_mode']+'写作' if profile else '根据产品资料与参考架构写作',.15)
         content=writing_guard.generate(model,payload['grounding'],payload['inputs']['extra_requirements'],profile,payload['writing_mode'],structure_reference=payload.get('structure_reference'))
         draft=finish_copy(task,content)
         return {'draft_id':draft['id'],'note':draft['note'],'fact_check':draft['fact_check']}
@@ -152,19 +164,30 @@ def work(task):
             else:raise ValueError('缺少文案或视频链接，请先补充研究素材')
         completed=list((task.get('result') or {}).get('completed',[]))
         failures={}
+        skipped={}
         for index,kind in enumerate(('video','title','cover_visual')):
             if kind in completed:continue
+            if core.STANDALONE:
+                current=core.get(resource,'case')
+                if kind=='title' and not (current.get('publication_caption') or current.get('publication_hashtags')):
+                    skipped[kind]='没有原始发布文案或话题，可补充后单独分析'
+                elif kind=='video' and not transcript(current).strip():
+                    skipped[kind]='视频没有口播逐字稿，可手动补充后分析'
+                elif kind=='cover_visual' and not (current.get('cover') or current.get('source_url')):
+                    skipped[kind]='没有封面图片，可上传封面后分析'
+                if kind in skipped:continue
             progress({'video':'文案研究','title':'标题研究','cover':'封面提示词','cover_visual':'封面研究'}[kind]+' · 分析中',(index+1)/4)
             try:
                 work({**task,'kind':'analysis','payload':{'type':kind},'research_label':{'video':'文案研究','title':'标题研究','cover':'封面提示词','cover_visual':'封面研究'}[kind]+' · 本地模型分析中','research_progress':(index+1)/4})
                 completed.append(kind)
             except ValueError as e:
                 failures[kind]=str(e)
-            task_update(id,result=core.dumps({'completed':completed,'failures':failures}))
+            task_update(id,result=core.dumps({'completed':completed,'failures':failures,'skipped':skipped}))
         if failures:
             names={'video':'文案研究','title':'标题研究','cover':'封面提示词','cover_visual':'封面研究'}
             raise ValueError('；'.join(names[k]+'：'+v for k,v in failures.items()))
-        return {'case_id':resource,'completed':completed}
+        if not completed:raise ValueError('尚无可分析的口播或图片，请补充资料')
+        return {'case_id':resource,'completed':completed,'skipped':skipped}
     if task['kind'] in ('process','link'):
         case=core.get(resource,'case')
         if task['kind']=='link':

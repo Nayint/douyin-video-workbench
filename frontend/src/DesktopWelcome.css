@@ -1,0 +1,19 @@
+.desktop-welcome { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
+.desktop-welcome-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.desktop-welcome h2 { margin: 8px 0; font-size: 24px; letter-spacing: -.5px; }
+.desktop-welcome p { color: var(--muted); margin: 8px 0; line-height: 1.6; }
+.desktop-start-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+.desktop-start-actions button { display: inline-flex; align-items: center; gap: 12px; }
+.desktop-setup-details { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+.desktop-capabilities { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px 32px; }
+.desktop-capability { display: flex; align-items: center; gap: 8px; }
+.desktop-capability small { margin-left: auto; color: var(--muted); }
+.desktop-capability .ready { color: var(--accent, #789c65); }
+.desktop-capability .pending { color: var(--muted); opacity: .55; }
+.desktop-data-location { display: flex; gap: 12px; margin-top: 24px; }
+.desktop-data-location strong { font-size: 13px; }
+.desktop-data-location code { display: block; margin-top: 8px; overflow-wrap: anywhere; color: var(--muted); font-size: 12px; }
+.desktop-data-location p, .desktop-setup-note { font-size: 12px; }
+.desktop-setup-footer { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+.desktop-welcome button:disabled { opacity: .55; cursor: wait; }
+@media(max-width: 700px) { .desktop-welcome { padding: 16px; } .desktop-welcome-heading { flex-direction: column; } .desktop-capabilities { grid-template-columns: 1fr; } .desktop-welcome h2 { font-size: 21px; } }

@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { isStandalone } from "./runtimeMode";
 
-// Text stays in this tab's session; File objects stay in memory across navigation.
+// Standalone text survives browser restarts; attachments stay in memory only.
 const memory = new Map<string, unknown>();
 export function useDraftState<T>(name: string, initial: T, persist = true): [T, Dispatch<SetStateAction<T>>] {
   const storageKey = "virallab-form-v1:" + name;
@@ -8,7 +9,7 @@ export function useDraftState<T>(name: string, initial: T, persist = true): [T, 
     if (memory.has(storageKey)) return memory.get(storageKey) as T;
     if (persist) {
       try {
-        const raw = sessionStorage.getItem(storageKey);
+        const raw = (isStandalone ? localStorage : sessionStorage).getItem(storageKey);
         if (raw !== null) {
           const saved = JSON.parse(raw);
           if (typeof saved === typeof initial && Array.isArray(saved) === Array.isArray(initial)) return saved;
@@ -23,7 +24,7 @@ export function useDraftState<T>(name: string, initial: T, persist = true): [T, 
     current.current = result;
     memory.set(storageKey, result);
     if (persist) {
-      try { sessionStorage.setItem(storageKey, JSON.stringify(result)); } catch { /* Keep the memory draft. */ }
+      try { (isStandalone ? localStorage : sessionStorage).setItem(storageKey, JSON.stringify(result)); } catch { /* Keep the memory draft. */ }
     }
     update(result);
   }, [storageKey, persist]);

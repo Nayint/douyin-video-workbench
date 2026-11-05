@@ -6,7 +6,7 @@ from pathlib import Path
 from . import core
 
 MODES = ('生活分享', '直接推荐', '演示答疑')
-SKILLS_ROOT = Path.home() / '.codex/skills'
+SKILLS_ROOT = core.SKILLS
 
 
 def load(author_id):

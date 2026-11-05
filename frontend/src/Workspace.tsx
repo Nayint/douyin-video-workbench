@@ -1,4 +1,5 @@
 import { useDraftState } from "./useDraftState";
+import { isDesktop } from "./runtimeMode";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowUpRight,
@@ -67,11 +68,11 @@ function CreationTaskStatus({
           <button
             onClick={() =>
               api("/tasks/" + task.id + "/resume", "POST")
-                .then(() => onNotice(task.kind === "author_write" ? "已重新排队生成并核对事实" : "已查询远端运行状态"))
+                .then(() => onNotice(task.kind !== "dify" ? "已重新排队生成并核对事实" : "已查询远端运行状态"))
                 .catch(onError)
             }
           >
-            {task.kind === "author_write" ? "重新生成并核对" : "查询并恢复结果"}
+            {task.kind !== "dify" ? "重新生成并核对" : "查询并恢复结果"}
           </button>
         </>
       ) : complete ? (
@@ -162,7 +163,7 @@ export function Creation({
   useEffect(() => {
     const active = tasks
       .filter(
-        (t) => ["dify", "author_write"].includes(t.kind) && ["queued", "running"].includes(t.status),
+        (t) => ["dify", "author_write", "local_write"].includes(t.kind) && ["queued", "running"].includes(t.status),
       )
       .map((t) => t.id);
     if (active.length)
@@ -175,7 +176,7 @@ export function Creation({
   }, [caseId, productId, draftName, requirements, authorId, writingMode, experience, structureId]);
   useEffect(() => { if (initialCase) setCase(initialCase); }, [initialCase]);
   const busy = !!busyAction;
-  const ready = (!!authorId || references.some(c => c.id === caseId)) && !!productId && !!draftName.trim();
+  const ready = (isDesktop || !!authorId || references.some(c => c.id === caseId)) && !!productId && !!draftName.trim();
   const payload = {
     case_id: authorId ? structureId : caseId,
     author_id: authorId,
@@ -227,12 +228,15 @@ export function Creation({
   }
   const feedbackTasks = tasks.filter(
     (t) =>
-      ["dify", "author_write"].includes(t.kind) &&
+      ["dify", "author_write", "local_write"].includes(t.kind) &&
       (["queued", "running", "failed", "interrupted"].includes(t.status) ||
         sessionTaskIds.includes(t.id)),
   );
   const reference = references.find(c => c.id === caseId);
   const selectedProduct = products.find(p => p.id === productId);
+  useEffect(() => {
+    if (isDesktop && selectedProduct && !draftName.trim()) setDraftName(selectedProduct.name + " · 口播文案");
+  }, [productId, products]);
   const selectedAuthor = authors.find(a => a.id === authorId);
   const completedTask = feedbackTasks.find(t => t.status === "succeeded" && t.result?.draft_id && t.request_key === requestKey && sessionTaskIds.includes(t.id));
   return (
@@ -254,7 +258,7 @@ export function Creation({
           <label>
             作者风格
             <select value={authorId} onChange={e => setAuthor(e.target.value)}>
-              <option value="">默认风格 · 参考案例</option>
+              <option value="">{isDesktop ? "自然口语 · 不指定作者" : "默认风格 · 参考案例"}</option>
               {authors.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </label>
@@ -276,9 +280,9 @@ export function Creation({
             <p className="hint">只借鉴所选视频的叙事架构，措辞和语气使用作者风格。这里只显示研究所内已完成视频分析的案例，排除作者蒸馏素材。</p>
           </> :
           <label>
-            研究案例
+            {isDesktop ? "参考视频架构（选填）" : "研究案例"}
             <select value={caseId} onChange={(e) => setCase(e.target.value)}>
-              <option value="">请选择案例</option>
+              <option value="">{isDesktop ? "不指定 · 根据产品资料创作" : "请选择案例"}</option>
               {references.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.title}
@@ -359,7 +363,7 @@ export function Creation({
           {(selectedAuthor || reference || selectedProduct) && <div className="creation-source-pair" aria-label="本次创作素材">
             <div key={caseId} className="creation-source-card">
               {selectedAuthor ? <PenLine size={24} /> : reference?.cover ? <img src={media(reference.cover)} alt="参考视频封面" /> : <FlaskConical size={24} />}
-              <span>{selectedAuthor ? "作者风格" : "参考案例"}</span><strong>{selectedAuthor?.name || reference?.title || "等待选择"}</strong>
+              <span>{selectedAuthor ? "作者风格" : "表达方式"}</span><strong>{selectedAuthor?.name || reference?.title || (isDesktop ? "自然口语" : "等待选择")}</strong>
             </div>
             <Plus className="source-plus" size={18} aria-hidden="true" />
             <div key={productId} className="creation-source-card">
@@ -372,7 +376,7 @@ export function Creation({
               <div className="creation-preview-summary">
                 <strong>{draftName.trim()}</strong>
                 <span>
-                  {selectedAuthor ? "作者风格：" + selectedAuthor.name + " · " + writingMode : "参考案例：" + reference?.title}
+                  {selectedAuthor ? "作者风格：" + selectedAuthor.name + " · " + writingMode : reference ? "参考案例：" + reference.title : "根据本次产品资料自然口语创作"}
                 </span>
                 <span>
                   产品资料：{products.find((p) => p.id === productId)?.name}
@@ -431,7 +435,7 @@ export function Creation({
               </p>
             </>
           ) : (
-            <Empty>选好作者或案例，再选择产品并命名，核对资料后开始创作。</Empty>
+            <Empty>{isDesktop ? "选择一份产品资料，就可以核对并创作文案。作者风格和参考架构均可选。" : "选好作者或案例，再选择产品并命名，核对资料后开始创作。"}</Empty>
           )}
         </section>
       </div>
@@ -608,7 +612,7 @@ export function Research({
           <h1>标题研究</h1>
           <p>比较标题怎样表达利益、情绪和悬念，积累可以验证的写法。</p>
         </div>
-        <Badge>Ollama 本地生成</Badge>
+        <Badge>{isDesktop ? "内置模型分析" : "Ollama 本地生成"}</Badge>
       </div>
       <div className="creation-grid">
         <section className="panel">

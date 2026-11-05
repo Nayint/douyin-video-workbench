@@ -1,4 +1,5 @@
 import { useDraftState } from "./useDraftState";
+import { isDesktop } from "./runtimeMode";
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import {
   ArrowUpRight,
@@ -171,12 +172,13 @@ export function ImportModal({
   onDone: (id: string, collectOnly: boolean) => void;
   onError: (s: string) => void;
 }) {
-  const [mode, setMode] = useDraftState("import.mode", "link"),
+  const [mode, setMode] = useDraftState("import.mode", "upload"),
     [title, setTitle] = useDraftState("import.title", ""),
     [url, setUrl] = useDraftState("import.url", ""),
     [text, setText] = useDraftState("import.text", ""),
     [file, setFile] = useDraftState<File | null>("import.file", null, false),
     [busy, setBusy] = useState(false);
+  useEffect(() => { if (isDesktop && mode === "link") setMode("upload"); }, [mode]);
   async function submit(collectOnly = false) {
     setBusy(true);
     try {
@@ -222,12 +224,13 @@ export function ImportModal({
   }
   return (
     <Modal title="导入研究素材" onClose={onClose}>
+      {isDesktop && <p className="hint">支持本地视频和手动文案；平台视频请先保存到本机，再导入研究。</p>}
       <div className="tabs">
         {[
           ["link", Link2, "视频链接"],
           ["upload", Upload, "本地视频"],
           ["manual", FileText, "手动录入"],
-        ].map(([v, I, label]: any) => (
+        ].filter(([value]) => !isDesktop || value !== "link").map(([v, I, label]: any) => (
           <button
             key={v}
             className={mode === v ? "selected" : ""}

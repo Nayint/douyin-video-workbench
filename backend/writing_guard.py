@@ -121,6 +121,15 @@ def mechanical_issues(copy, grounding):
     permitted.update(v for v,u in source_amounts)
     issues = ['出现资料没有的数字：' + n for n in sorted(set(re.findall(number, norm(copy))) - permitted)]
     issues += ['出现资料没有的数量或价格：'+v+u for v,u in sorted(amounts(copy)-source_amounts)]
+    if core.STANDALONE:
+        # Small local models sometimes cite a material while inventing its
+        # physical properties. A related quote is not evidence for that claim.
+        stated = [part for part in re.split(r'[。；;\n]', source)
+                  if not re.search(r'未知|未提供|待确认|无法确认|不得推断', part)]
+        properties = ('柔软','耐用','耐磨','防水','透气','抗菌','无毒','防晒','保温','保冷','防滑','防漏')
+        for property_name in properties:
+            if property_name in copy and not any(property_name in part for part in stated):
+                issues.append('产品性质没有明确依据：'+property_name)
     if not grounding['personal_experience'].strip() and re.search(
         r'我[^，。！？\n]{0,10}(?:买了|买过|买回来|用了|用过|用下来|回购|亲测|实测)|'
         r'亲测|回购了|用下来|买回来|收到货|我(?:爸|妈|家人)[^，。！？\n]{0,8}(?:说|用|买)', copy):
@@ -177,9 +186,23 @@ def check(model, copy, grounding):
         '资料没有证明某性质，不代表已证明它不具有该性质。不能从短提手推出省力或从小袋推出电脑容量。'
         '只核对这次产品，不把文案中的免责声明或承诺已经核对当作证据。'
     )
+    if core.STANDALONE:
+        system += ('supported需要证据覆盖句中每一项事实，不能因为商品名或材质相同就整句放行。'
+                   '例如资料仅写“材质：帆布”，不能据此支持“柔软的帆布”或“耐用的帆布”；柔软是手感，耐用是寿命性能，都需要明确资料。')
+    review_schema = REVIEW_SCHEMA
+    evidence_options = None
+    if core.STANDALONE:
+        source = grounding['product_name'] + '\n' + grounding['product_facts'] + '\n' + grounding['personal_experience']
+        evidence_options = list(dict.fromkeys(part.strip() for part in re.split(r'[，,。；;\n]+', source)
+                                            if len(norm(part)) >= 2))
+        if not evidence_options: raise ValueError('产品事实过短，无法进行有依据的逐句核对')
+        review_schema = json.loads(json.dumps(REVIEW_SCHEMA))
+        review_schema['properties']['checks']['items']['properties']['evidence']['items'] = {'type':'string','enum':evidence_options}
+        system += 'evidence只能从evidence_options中逐项原样选择，不添加字段名前缀，不拼接、改写或省略引用。'
     result = chat(model, system, {'product_name': grounding['product_name'],
         'product_facts': grounding['product_facts'], 'personal_experience': grounding['personal_experience'],
-        'sentences': [{'id': i, 'text': row} for i, row in enumerate(rows)]}, REVIEW_SCHEMA)
+        'sentences': [{'id': i, 'text': row} for i, row in enumerate(rows)],
+        **({'evidence_options': evidence_options} if evidence_options else {})}, review_schema)
     issues = mechanical_issues(copy, grounding) + validate_review(rows, result, grounding)
     return {'accepted': not issues, 'issues': issues, 'checks': result['checks']}
 

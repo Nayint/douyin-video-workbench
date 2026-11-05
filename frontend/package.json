@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
+    "build:standalone": "tsc -b && vite build --config vite.standalone.config.ts",
     "build:play": "vite build --config vite.play.config.ts",
     "test:estate": "node --test tests/estate/*.test.js",
     "dev:coop": "tsx --tsconfig server/coop/tsconfig.json server/coop/index.ts",

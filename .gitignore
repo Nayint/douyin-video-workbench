@@ -83,3 +83,11 @@ frontend/dist-coop/
 /deploy/dify/upstream/
 /deploy/dify/volumes/
 .venv*/
+
+# Reproducible desktop builds; never distribute private working directories.
+/build-desktop/
+/dist-desktop/
+/frontend/dist-standalone/
+!/docs/QUICKSTART.md
+!/docs/DESKTOP.md
+!/docs/DESKTOP-OFFLINE.md

@@ -11,7 +11,7 @@ def create_backup():
     with core.db() as c:
         if c.execute("SELECT count(*) FROM tasks WHERE status IN ('queued','running')").fetchone()[0]:
             raise ValueError('请等待当前任务完成后创建一致性备份')
-    directory=core.ROOT/'backups';directory.mkdir(exist_ok=True,mode=0o700)
+    directory=core.BACKUPS;directory.mkdir(exist_ok=True,mode=0o700)
     path=directory/f'virallab-{core.uid()}.zip'
     with tempfile.TemporaryDirectory(dir=core.DATA) as tmp:
         snapshot=Path(tmp)/'virallab.sqlite3'

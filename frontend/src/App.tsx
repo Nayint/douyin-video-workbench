@@ -1,4 +1,7 @@
 import { CreationStory } from "./CreationStory";
+import { DesktopWelcome } from "./DesktopWelcome";
+import { DesktopSettings } from "./DesktopSettings";
+import { isDesktop as desktopBuild } from "./runtimeMode";
 import { ResearchDialog, type CardOrigin } from "./ResearchDialog";
 import { workspaceRoute, workspaceHash } from "./workspaceRoute";
 import { ProductLibrary } from "./ProductLibrary";
@@ -231,7 +234,7 @@ export default function App() {
         <div className="sidebar-bottom">
           <div className="local-chip">
             <i />
-            本地工作空间<Badge>V1.0</Badge>
+            本地工作空间<Badge>{desktopBuild ? "离线版" : "V1.0"}</Badge>
           </div>
           <p>积累好内容，找到自己的表达。</p>
           <button className="theme-toggle" onClick={() => setDark(!dark)}>
@@ -352,7 +355,12 @@ export default function App() {
                   })}
                 </span>
               </div>
-              <section className="hero apple-web-hero">
+              <DesktopWelcome onSettings={() => navigate("settings")} onStart={action => {
+                refresh();
+                if (action === "import") setImporting(true);
+                else navigate(action === "demo" ? "collected" : "create");
+              }} />
+              {!desktopBuild && <section className="hero apple-web-hero">
                 <CreationStory />
                 <div className="hero-actions">
                   <button className="primary" onClick={() => setImporting(true)}>
@@ -367,7 +375,7 @@ export default function App() {
                   <button onClick={() => navigate("library")}><span className="path-number">02</span><strong>看懂表达</strong><span>研究文案、标题与封面</span><ArrowUpRight size={18} /></button>
                   <button onClick={() => navigate("create")}><span className="path-number">03</span><strong>写出自己的</strong><span>结合产品，让灵感成为文案</span><ArrowUpRight size={18} /></button>
                 </div>
-              </section>
+              </section>}
               <div className="stats">
                 {[
                   [Library, "已收录视频", dashboard?.total, "collected"],
@@ -606,7 +614,7 @@ export default function App() {
             <ProductLibrary tasks={tasks} onError={fail} onNotice={feedback} />
           )}
           {page === "settings" && (
-            <SettingsPage tasks={tasks} onError={fail} onNotice={feedback} />
+            desktopBuild ? <DesktopSettings onError={fail} onNotice={feedback} /> : <SettingsPage tasks={tasks} onError={fail} onNotice={feedback} />
           )}
           <footer>
             <span>

@@ -21,19 +21,28 @@ from . import author_profiles, writing_guard, writing_learning
 
 @asynccontextmanager
 async def lifespan(app):
+    if core.STANDALONE and not core.DESKTOP:
+        from .desktop_setup import initialize
+        initialize()
     core.init_db()
     core.repair_note_uris()
     cfg=core.settings()
     for folder in note_layout.FOLDERS:
         core.contained(cfg['vault_path'],cfg['vault_subdir']+'/'+folder).mkdir(parents=True,exist_ok=True)
     jobs.start()
+    if core.STANDALONE and os.environ.get('VIRALLAB_AUTO_MODELS') == '1':
+        from . import local_setup
+        local_setup.begin()
     yield
     jobs.STOP.set(); jobs.WAKE.set()
 
 app=FastAPI(title='ViralLab',version='1.0.0',lifespan=lifespan,docs_url='/api/docs',redoc_url=None)
+from .desktop_setup import router as desktop_router
+app.include_router(desktop_router, prefix='/api/setup')
+if core.DESKTOP: app.include_router(desktop_router, prefix='/api/desktop')
 # The private estate extension is optional in the public workbench.
 from importlib.util import find_spec
-if find_spec('backend.world_chat') is not None:
+if not core.STANDALONE and find_spec('backend.world_chat') is not None:
     from . import world_chat
     app.include_router(world_chat.router)
 
@@ -465,21 +474,21 @@ def prepare_creation(data:GenerateInput):
     p=core.get(data.product_id,'product')
     profile=author_profiles.load(data.author_id) if data.author_id else None
     c=creation_references.require(data.case_id) if data.case_id else None
-    if not profile and not c:raise ValueError('请选择作者风格或参考案例')
+    if not core.STANDALONE and not profile and not c:raise ValueError('请选择作者风格或参考案例')
     if data.writing_mode not in author_profiles.MODES:raise ValueError('未知的作者写作方式')
     if profile and data.mode!='prototype':raise ValueError('作者写作不使用链接工作流')
-    structure=creation_references.structure(c['id'],core.settings()['text_model']) if profile and c else None
+    structure=creation_references.structure(c['id'],core.settings()['text_model']) if c and (profile or core.STANDALONE) else None
     learning=writing_learning.choose(data.author_id or 'default',data.writing_mode,p.get('category',''),data.learning_ids)
     material=product_tools.dify_material(p)
     requirements=data.extra_requirements.rstrip()+'\n\n'+spoken.FORMAT_REQUIREMENT
     requirements+='\n\n【称呼习惯】默认使用朋友、朋友们等中性称呼，也可以直接进入内容；除非本次明确指定，不惯用姐妹、姐妹们或家人们。参考视频中的称呼不随架构迁移。'
     if data.personal_experience:requirements+='\n\n【用户明确提供的真实体验】\n'+data.personal_experience
     base_requirements=requirements
-    if not profile:
+    if not profile and not core.STANDALONE:
         while learning and len(base_requirements+writing_learning.instruction(learning))>5000 and data.learning_ids is None:
             learning.pop()
     requirements=base_requirements+writing_learning.instruction(learning)
-    if not profile and len(requirements)>5000:
+    if not profile and not core.STANDALONE and len(requirements)>5000:
         raise ValueError('本次要求、真实体验与沉淀合计超过Dify的5000字限制，请精简要求或减少勾选经验')
     grounding=writing_guard.snapshot(p['name'],material,data.personal_experience,
         author_hash=profile['skill_hash'] if profile else '',writing_mode=data.writing_mode,
@@ -487,6 +496,11 @@ def prepare_creation(data:GenerateInput):
         structure_hash=structure['hash'] if structure else '',learning_hash=writing_guard.digest(learning))
     inputs={'source_material':material,'product_files':[],'extra_requirements':requirements.strip()}
     selection={k:core.settings()[k] for k in ('text_model','vision_model')}
+    if core.STANDALONE:
+        return {'mode':'local','inputs':inputs,'grounding':grounding,
+                'author':author_profiles.public(profile) if profile else None,'_author':profile,
+                'structure_reference':structure,'learning_entries':learning,'model_selection':selection,
+                'notice':'本机生成，逐句核对产品事实后保存；无需 Dify 或在线账号。'}
     if profile:
         return {'mode':'author','inputs':inputs,'grounding':grounding,
                 'author':author_profiles.public(profile),'_author':profile,'structure_reference':structure,'learning_entries':learning,
@@ -515,7 +529,7 @@ def generate(data:GenerateInput):
              'grounding':p['grounding'],'author':p.get('_author'),
              'writing_mode':data.writing_mode,'case_id':data.case_id or None,
              'structure_reference':p.get('structure_reference'),'learning_entries':p.get('learning_entries',[])}
-    return jobs.enqueue('author_write' if data.author_id else 'dify',data.case_id or data.product_id,payload,data.request_key)
+    return jobs.enqueue('author_write' if data.author_id else 'local_write' if core.STANDALONE else 'dify',data.case_id or data.product_id,payload,data.request_key)
 
 @app.get('/api/drafts')
 def drafts():return [{**d,'title':note_layout.draft_title(d),'content':spoken.layout_document(core.note_read(d['note']['path']))} for d in sorted(core.records('draft'),key=lambda d:d['created_at'],reverse=True) if not d.get('deleted_at')]
@@ -602,7 +616,7 @@ def note(path:str):
 @app.get('/api/settings')
 def get_settings():
     cfg=core.settings();keys=cfg.pop('dify_keys')
-    return {**cfg,'dify_model_status':dify_models.status(),'dify_workflows':{k:{'configured':bool(v.get('api_key')),'app_id':v.get('app_id')} for k,v in keys.items()}}
+    return {**cfg,'desktop':core.DESKTOP,'standalone':core.STANDALONE,'dify_model_status':dify_models.status(),'dify_workflows':{k:{'configured':bool(v.get('api_key')),'app_id':v.get('app_id')} for k,v in keys.items()}}
 
 @app.put('/api/settings')
 def set_settings(data:dict):
@@ -613,6 +627,10 @@ def set_settings(data:dict):
     if 'cover_style_profile' in values:
         if not isinstance(values['cover_style_profile'],str) or not 20<=len(values['cover_style_profile'])<=10000:raise ValueError('系列封面风格请填写20至10000字的固定规范')
     cfg=core.settings()
+    if core.DESKTOP:
+        from . import desktop_ai
+        if desktop_ai.MANAGER and 'ollama_url' in values and values['ollama_url'] != desktop_ai.MANAGER.url:
+            raise ValueError('桌面版使用内置 AI，无需修改服务地址')
     for path_key in ('vault_path','vault_subdir','storage_path'):
         if path_key in values and values[path_key]!=cfg[path_key] and core.records('case'):
             raise ValueError('已有案例时不能直接切换存储路径，请先备份并按迁移说明处理')
@@ -634,7 +652,7 @@ def set_settings(data:dict):
     values['dify_keys']=keys
     combined={**cfg,**values}
     synced=dify_models.status()
-    if (any(values.get(k,cfg[k])!=cfg[k] for k in ('text_model','vision_model','ollama_url')) or
+    if not core.STANDALONE and (any(values.get(k,cfg[k])!=cfg[k] for k in ('text_model','vision_model','ollama_url')) or
         any(key.get('api_key') and any(synced.get(mode,{}).get(k)!=combined[k] for k in ('text_model','vision_model')) for mode,key in keys.items())):
         for mode,key in keys.items():
             if key.get('api_key'):
@@ -674,7 +692,7 @@ def backup():
 @app.get('/api/backups/{filename}')
 def download_backup(filename):
     if not re.fullmatch(r'virallab-[0-9a-f-]+\.zip',filename):raise ValueError('无效备份名')
-    path=core.contained(core.ROOT/'backups',filename)
+    path=core.contained(core.BACKUPS,filename)
     if not path.is_file():raise ValueError('备份不存在')
     return FileResponse(path,filename=filename)
 
@@ -684,7 +702,7 @@ def media_file(path):
     if not file.is_file():raise ValueError('媒体文件不存在')
     return FileResponse(file)
 
-DIST=core.ROOT/'frontend/dist'
+DIST=Path(os.environ.get('VIRALLAB_FRONTEND_DIST',core.ROOT/'frontend/dist')).resolve()
 @app.get('/{path:path}')
 def frontend(path):
     if path.startswith('api/'):raise HTTPException(404,'接口不存在')
